@@ -1,0 +1,112 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: radial-gradient(circle at top, #1e2a22, #080808 70%);
+  color: white;
+  font-family: Arial, sans-serif;
+  text-align: center;
+}
+
+.game-wrapper {
+  max-width: 760px;
+  margin: 25px auto;
+  padding: 20px;
+}
+
+h1 {
+  margin: 10px 0 15px;
+  color: #00ff88;
+  letter-spacing: 1px;
+}
+
+.info {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  flex-wrap: wrap;
+  margin-bottom: 15px;
+  font-size: 18px;
+}
+
+.info span {
+  background: rgba(255, 255, 255, 0.08);
+  padding: 8px 14px;
+  border-radius: 20px;
+}
+
+canvas {
+  width: 100%;
+  max-width: 600px;
+  height: auto;
+  background: #050505;
+  border: 4px solid #00ff88;
+  box-shadow: 0 0 25px rgba(0, 255, 136, 0.3);
+  display: block;
+  margin: 0 auto;
+}
+
+.legend {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin: 15px auto 8px;
+  color: #ddd;
+  font-size: 14px;
+}
+
+.legend b {
+  display: inline-block;
+  width: 13px;
+  height: 13px;
+  border-radius: 3px;
+  margin-right: 5px;
+  vertical-align: middle;
+}
+
+.legend .food { background: #ffcc00; }
+.legend .small { background: #3399ff; }
+.legend .big { background: #ff3333; }
+.legend .poison { background: #aa00ff; }
+
+.instructions {
+  color: #ccc;
+  line-height: 1.5;
+}
+
+.controls {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+button {
+  background: #00ff88;
+  color: #000;
+  border: none;
+  padding: 12px 24px;
+  font-size: 16px;
+  cursor: pointer;
+  border-radius: 8px;
+  font-weight: bold;
+}
+
+button:hover {
+  background: #00cc66;
+}
+
+@media (max-width: 640px) {
+  .game-wrapper {
+    padding: 12px;
+  }
+
+  .info {
+    font-size: 15px;
+    gap: 8px;
+  }
+}

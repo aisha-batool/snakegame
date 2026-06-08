@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Snake Survival Game</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="game-wrapper">
+    <h1>Snake Survival</h1>
+
+    <div class="info">
+      <span>Score: <strong id="score">0</strong></span>
+      <span>Level: <strong id="level">1</strong></span>
+      <span>Speed: <strong id="speed">1x</strong></span>
+    </div>
+
+    <canvas id="gameCanvas" width="600" height="600"></canvas>
+
+    <div class="legend">
+      <span><b class="food"></b> Food</span>
+      <span><b class="small"></b> Small Snake - Safe</span>
+      <span><b class="big"></b> Big Snake - Danger</span>
+      <span><b class="poison"></b> Poison Snake - Danger</span>
+    </div>
+
+    <p class="instructions">
+      Use Arrow Keys or WASD to move. Eat food and small snakes. Avoid big and poison snakes. The snake wraps around the screen.
+    </p>
+
+    <div class="controls">
+      <button id="startBtn">Start / Pause</button>
+      <button id="restartBtn">Restart</button>
+    </div>
+  </div>
+
+  <script src="game.js"></script>
+</body>
+</html>
