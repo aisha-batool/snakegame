@@ -1,30 +1,23 @@
-# Snake Survival Arena
+# Venom Arena - Snake Survival Game
 
-A web-based snake survival game built with plain HTML, CSS, and JavaScript.
+A polished web based snake survival game built with plain HTML, CSS and JavaScript.
 
 ## Features
 
-- Browser-based game using HTML Canvas
+- Modern landing page
+- Canvas-based snake game
+- Real snake-style graphics with rounded bodies, oval heads, eyes, forked tongue and scale-like body markings
+- Increasing levels and speed
 - Screen wrapping
-- Increasing level and speed
-- Enemy snakes with real bodies
+- Enemy snakes with body length
 - Eat smaller snakes only
 - Bigger snakes and poison snakes kill the player
-- Safer spawning logic
-- Start, pause, restart
+- Food, particles and high score
 - Keyboard and mobile controls
-- High score saved in browser localStorage
 
-## Controls
+## Upload to GitHub Pages
 
-- Arrow keys or WASD to move
-- Space or P to pause
-- Enter to start
-- Mobile buttons on small screens
-
-## GitHub Pages Setup
-
-Important: GitHub Pages needs these files in the root of your repository:
+Upload these files to the root of your repository:
 
 ```text
 index.html
@@ -33,19 +26,4 @@ game.js
 README.md
 ```
 
-Do not upload only the zip file. Extract it first, then upload the files.
-
-Then go to:
-
-```text
-Repository Settings -> Pages
-```
-
-Select:
-
-```text
-Branch: main
-Folder: /root
-```
-
-Save and open the live URL.
+Do not upload the zip itself. Extract it first.
