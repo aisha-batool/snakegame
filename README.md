@@ -9,7 +9,6 @@ This version updates the landing page UI to closely match the earlier premium mo
 - Play Now and GitHub buttons
 - Four feature cards
 - Live gameplay preview section
-- Leaderboard preview
 - Browser CTA section
 - Actual playable snake game below
 - Realistic canvas snakes with curved bodies, eyes, tongue, and scale highlights
@@ -46,3 +45,7 @@ Do not upload only the ZIP file.
 - The player can now eat a smaller snake from any part of the small snake.
 - The player must still be larger than the small snake.
 - Big and poison snakes remain dangerous from any body part.
+
+## Update
+
+- Removed leaderboard from the landing page preview.
