@@ -1099,3 +1099,22 @@ button {
     width: 330px;
   }
 }
+
+
+/* Wrong-hit shake effect */
+.game-shell.shake,
+.browser-preview.shake {
+  animation: arenaShake 0.42s ease-in-out;
+}
+
+@keyframes arenaShake {
+  0% { transform: translateX(0); }
+  12% { transform: translateX(-10px) rotate(-0.5deg); }
+  24% { transform: translateX(9px) rotate(0.5deg); }
+  36% { transform: translateX(-8px) rotate(-0.35deg); }
+  48% { transform: translateX(7px) rotate(0.35deg); }
+  60% { transform: translateX(-5px); }
+  72% { transform: translateX(4px); }
+  84% { transform: translateX(-2px); }
+  100% { transform: translateX(0); }
+}

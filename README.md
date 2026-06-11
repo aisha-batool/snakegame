@@ -26,3 +26,15 @@ README.md
 ```
 
 Do not upload only the ZIP file.
+
+
+## Gameplay rule fixes in this version
+
+- Fixed the visual bug when a snake wraps around the canvas.
+- Snake body drawing is split at wrap boundaries, so no long distorted line appears across the arena.
+- Added shake effect when the player hits the wrong snake.
+- Eating works from the mouth/head side only.
+- Player can eat a small snake only by hitting its head with the player's head.
+- Hitting any snake body is not counted as eating.
+- Big and poison snakes can end the game if their head bumps/eats the player.
+- Small snakes avoid bumping into the player by changing direction.

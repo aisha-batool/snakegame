@@ -15,6 +15,7 @@
   const startButton = document.getElementById("startButton");
   const pauseButton = document.getElementById("pauseButton");
   const restartButton = document.getElementById("restartButton");
+  const gameShell = document.querySelector(".game-shell");
 
   const CELL = 20;
   const COLS = Math.floor(canvas.width / CELL);
@@ -80,7 +81,7 @@
     food = getFreePosition(6);
 
     updateHud();
-    showOverlay("Snake Survival Arena", "Eat food and smaller snakes. Avoid bigger and poison snakes.", "Start Game");
+    showOverlay("Snake Survival Arena", "Eat food and smaller snakes from the mouth side only. Avoid bigger and poison snakes.", "Start Game");
     draw();
   }
 
@@ -131,7 +132,7 @@
     }
 
     if (hitsOwnBody(newHead)) {
-      return endGame("You crashed into yourself.");
+      return endGame("You crashed into yourself.", true);
     }
 
     if (same(newHead, food)) {
@@ -142,23 +143,102 @@
       updateHud();
     }
 
-    if (checkEnemyCollision()) return;
+    // Player can eat or collide only from the player's mouth/head.
+    if (checkPlayerHeadAgainstEnemies()) return;
 
     maybeSpawnEnemy();
     moveEnemies();
 
-    checkEnemyCollision();
+    // Dangerous snakes can actively bump/eat the player.
+    checkDangerousEnemyHeadsAgainstPlayer();
+  }
+
+  function checkPlayerHeadAgainstEnemies() {
+    const head = player[0];
+
+    for (let i = enemies.length - 1; i >= 0; i--) {
+      const enemy = enemies[i];
+      const enemyHead = enemy.body[0];
+      const hitEnemyHead = same(head, enemyHead);
+      const hitEnemyBodyIndex = enemy.body.findIndex((part, index) => index > 0 && same(part, head));
+
+      // Mouth-to-mouth eating only.
+      if (hitEnemyHead) {
+        if (enemy.type === "small" && player.length > enemy.body.length) {
+          score += 3 + enemy.body.length;
+          pendingGrowth += Math.min(6, enemy.body.length);
+          enemies.splice(i, 1);
+          updateDifficulty();
+          updateHud();
+          return false;
+        }
+
+        if (enemy.type === "small") {
+          endGame("You tried to eat a snake that was not smaller than you.", true);
+        } else if (enemy.type === "big") {
+          endGame("You bumped into a bigger snake head.", true);
+        } else {
+          endGame("You touched a poison snake head.", true);
+        }
+        return true;
+      }
+
+      // Hitting a snake body is not eating. Eating must happen from mouth side/head.
+      if (hitEnemyBodyIndex !== -1) {
+        if (enemy.type === "small") {
+          endGame("You hit the small snake's body. Eat from the mouth side only.", true);
+        } else if (enemy.type === "big") {
+          endGame("You hit a bigger snake's body.", true);
+        } else {
+          endGame("You touched a poison snake's body.", true);
+        }
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  function checkDangerousEnemyHeadsAgainstPlayer() {
+    for (const enemy of enemies) {
+      const enemyHead = enemy.body[0];
+      const hitPlayerIndex = player.findIndex(part => same(part, enemyHead));
+
+      if (hitPlayerIndex === -1) continue;
+
+      if (enemy.type === "small") {
+        // Small snakes are not allowed to bump the player. Push them away instead of killing the player.
+        steerSmallSnakeAway(enemy);
+        enemy.body = rebuildEnemyBody(enemy.body[0], enemy.dir, enemy.body.length);
+        continue;
+      }
+
+      if (enemy.type === "big") {
+        endGame("A bigger snake bumped into you.", true);
+      } else {
+        endGame("A poison snake bumped into you.", true);
+      }
+      return true;
+    }
+
+    return false;
   }
 
   function moveEnemies() {
     for (const enemy of enemies) {
-      if (Math.random() < enemy.turnChance) {
-        enemy.dir = chooseEnemyDirection(enemy);
-      }
+      enemy.dir = chooseEnemyDirection(enemy);
 
+      const oldBody = enemy.body.map(part => ({ ...part }));
       const newHead = wrap(movePoint(enemy.body[0], enemy.dir));
+
       enemy.body.unshift(newHead);
       enemy.body.pop();
+
+      // Small snakes should not bump the player themselves.
+      if (enemy.type === "small" && enemy.body.some((part, index) => index === 0 && occupiesPlayer(part))) {
+        enemy.body = oldBody;
+        steerSmallSnakeAway(enemy);
+      }
     }
 
     enemies = enemies.filter((enemy, index) => {
@@ -169,35 +249,46 @@
     });
   }
 
-  function checkEnemyCollision() {
-    const head = player[0];
+  function steerSmallSnakeAway(enemy) {
+    const safeDirs = ["UP", "DOWN", "LEFT", "RIGHT"].filter(dir => {
+      if (dir === oppositeDirection(enemy.dir)) return false;
+      const next = wrap(movePoint(enemy.body[0], dir));
+      return !isNearPlayer(next, 1);
+    });
 
-    for (let i = enemies.length - 1; i >= 0; i--) {
-      const enemy = enemies[i];
-      const hitIndex = enemy.body.findIndex(part => same(part, head));
-      if (hitIndex === -1) continue;
+    enemy.dir = safeDirs.length ? safeDirs[Math.floor(Math.random() * safeDirs.length)] : oppositeDirection(enemy.dir);
+  }
 
-      if (enemy.type === "small" && player.length > enemy.body.length) {
-        score += 3 + enemy.body.length;
-        pendingGrowth += Math.min(6, enemy.body.length);
-        enemies.splice(i, 1);
-        updateDifficulty();
-        updateHud();
-        return false;
-      }
+  function chooseEnemyDirection(enemy) {
+    const shouldTurn = Math.random() < enemy.turnChance;
+    let candidates = ["UP", "DOWN", "LEFT", "RIGHT"].filter(d => d !== oppositeDirection(enemy.dir));
 
-      if (enemy.type === "small") {
-        endGame("This snake was not small enough to eat.");
-      } else if (enemy.type === "big") {
-        endGame("You hit a bigger snake.");
-      } else {
-        endGame("You touched a poison snake.");
-      }
+    if (enemy.type === "small") {
+      // Small snakes should avoid moving into or very near the player.
+      const safe = candidates.filter(dir => {
+        const next = wrap(movePoint(enemy.body[0], dir));
+        return !isNearPlayer(next, 1);
+      });
 
-      return true;
+      if (safe.length) candidates = safe;
     }
 
-    return false;
+    if (!shouldTurn) {
+      const straightNext = wrap(movePoint(enemy.body[0], enemy.dir));
+      if (enemy.type !== "small" || !isNearPlayer(straightNext, 1)) {
+        return enemy.dir;
+      }
+    }
+
+    return candidates[Math.floor(Math.random() * candidates.length)] || enemy.dir;
+  }
+
+  function occupiesPlayer(point) {
+    return player.some(part => same(part, point));
+  }
+
+  function isNearPlayer(point, range = 1) {
+    return player.some(part => distanceWrapped(point, part) <= range);
   }
 
   function maybeSpawnEnemy() {
@@ -210,7 +301,7 @@
     const type = chooseEnemyType();
     const length = enemyLength(type);
     const dir = randomDirection();
-    const start = getFreePosition(7);
+    const start = getFreePosition(8);
     const body = buildEnemyBody(start, dir, length);
 
     if (!body || body.some(p => isOccupied(p, 4))) return;
@@ -219,7 +310,7 @@
       type,
       dir,
       body,
-      turnChance: type === "small" ? 0.30 : 0.18,
+      turnChance: type === "small" ? 0.34 : 0.18,
       phase: Math.random() * Math.PI * 2
     });
   }
@@ -249,6 +340,10 @@
   }
 
   function buildEnemyBody(head, dir, length) {
+    return rebuildEnemyBody(head, dir, length);
+  }
+
+  function rebuildEnemyBody(head, dir, length) {
     const opposite = oppositeDirection(dir);
     const body = [head];
 
@@ -275,11 +370,6 @@
     if (dir === oppositeDirection(nextDirection)) return;
 
     nextDirection = dir;
-  }
-
-  function chooseEnemyDirection(enemy) {
-    const dirs = ["UP", "DOWN", "LEFT", "RIGHT"].filter(d => d !== oppositeDirection(enemy.dir));
-    return dirs[Math.floor(Math.random() * dirs.length)];
   }
 
   function movePoint(point, dir) {
@@ -381,8 +471,8 @@
     }
 
     for (let i = 0; i < 20; i++) {
-      const x = (i * 137 + Math.sin(pulse + i) * 40) % canvas.width;
-      const y = (i * 91 + Math.cos(pulse * 0.7 + i) * 30) % canvas.height;
+      const x = (i * 137 + Math.sin(pulse + i) * 40 + canvas.width) % canvas.width;
+      const y = (i * 91 + Math.cos(pulse * 0.7 + i) * 30 + canvas.height) % canvas.height;
       ctx.fillStyle = i % 3 === 0 ? "rgba(140,255,63,0.22)" : "rgba(255,216,74,0.16)";
       ctx.beginPath();
       ctx.arc(x, y, 2 + (i % 4), 0, Math.PI * 2);
@@ -439,24 +529,62 @@
   function drawRealSnake(body, dir, palette, phase = 0, type = "player") {
     if (!body.length) return;
 
-    const points = body.map((part, index) => {
-      const center = {
-        x: part.x * CELL + CELL / 2,
-        y: part.y * CELL + CELL / 2
-      };
+    // IMPORTANT FIX:
+    // When the snake wraps from one side to another, adjacent grid cells may be visually far apart.
+    // Splitting into continuous pieces prevents the body drawing a huge line across the canvas.
+    const segments = splitBodyAtWraps(body);
 
-      if (index > 0 && index < body.length - 1) {
-        const wave = Math.sin(index * 0.9 + pulse + phase) * 2.1;
-        center.x += wave;
-        center.y += Math.cos(index * 0.75 + pulse + phase) * 1.2;
+    for (const segment of segments) {
+      const points = segment.map((part, index) => {
+        const center = {
+          x: part.x * CELL + CELL / 2,
+          y: part.y * CELL + CELL / 2
+        };
+
+        if (index > 0 && index < segment.length - 1) {
+          const wave = Math.sin(index * 0.9 + pulse + phase) * 2.1;
+          center.x += wave;
+          center.y += Math.cos(index * 0.75 + pulse + phase) * 1.2;
+        }
+
+        return center;
+      });
+
+      drawSnakeBodyPath(points, palette, type);
+      drawSnakeScales(points, type);
+    }
+
+    // Draw head only once, at the true snake head.
+    const headPoint = {
+      x: body[0].x * CELL + CELL / 2,
+      y: body[0].y * CELL + CELL / 2
+    };
+    drawSnakeHead(headPoint, dir, palette, type);
+  }
+
+  function splitBodyAtWraps(body) {
+    if (body.length <= 1) return [body];
+
+    const segments = [[body[0]]];
+
+    for (let i = 1; i < body.length; i++) {
+      const previous = body[i - 1];
+      const current = body[i];
+
+      const rawDx = Math.abs(previous.x - current.x);
+      const rawDy = Math.abs(previous.y - current.y);
+
+      // If raw distance is huge, the snake wrapped. Start a new visual segment.
+      const wrappedVisually = rawDx > 1 || rawDy > 1;
+
+      if (wrappedVisually) {
+        segments.push([current]);
+      } else {
+        segments[segments.length - 1].push(current);
       }
+    }
 
-      return center;
-    });
-
-    drawSnakeBodyPath(points, palette, type);
-    drawSnakeScales(points, type);
-    drawSnakeHead(points[0], dir, palette, type);
+    return segments;
   }
 
   function drawSnakeBodyPath(points, palette, type) {
@@ -619,10 +747,28 @@
     overlay.classList.add("hidden");
   }
 
-  function endGame(reason) {
+  function triggerShake() {
+    if (!gameShell) return;
+    gameShell.classList.remove("shake");
+    void gameShell.offsetWidth;
+    gameShell.classList.add("shake");
+
+    window.setTimeout(() => {
+      gameShell.classList.remove("shake");
+    }, 500);
+  }
+
+  function endGame(reason, shake = false) {
+    if (state === "gameover") return;
+
     state = "gameover";
     updateHud();
-    showOverlay("Game Over", `${reason} Final score: ${score}. Level reached: ${level}.`, "Play Again");
+
+    if (shake) triggerShake();
+
+    window.setTimeout(() => {
+      showOverlay("Game Over", `${reason} Final score: ${score}. Level reached: ${level}.`, "Play Again");
+    }, shake ? 220 : 0);
   }
 
   document.addEventListener("keydown", event => {
